@@ -71,8 +71,12 @@
         color: #000000;
       }
 
+      .word-trust {
+        color: var(--accent2);
+      }
+
       .word-digest {
-        color: var(--accent);
+        color: var(--foreground);
       }
 
       .place-label {
@@ -100,7 +104,7 @@
 
       .nav-row a:focus-visible,
       .featured-list a:focus-visible {
-        outline: 2px solid var(--accent);
+        outline: 2px solid var(--accent2);
         outline-offset: 3px;
       }
 
@@ -260,7 +264,9 @@
           <div class="place-label" id="edition-type">Trust & Safety Daily</div>
         </div>
         <h1>
-          <span class="word-ai">AI</span> <span class="word-digest">Trust &amp; Safety Digest</span>
+          <span class="word-ai">AI</span>
+          <span class="word-trust">Trust &amp; Safety</span>
+          <span class="word-digest">Digest</span>
         </h1>
         <nav class="nav-row" aria-label="Primary">
           <a href="#brief">Daily Brief</a>
