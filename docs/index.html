@@ -2,11 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>AI Research Digest</title>
+    <title>AI Trust & Safety Digest</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="A minimalist daily AI news digest with one short brief and a handful of worthwhile links."
+      content="A curated daily AI trust and safety digest with one short brief, a few high-signal links, and a clear edition date."
     />
 
     <style>
@@ -51,6 +51,12 @@
         font-size: 13px;
         color: #444444;
         margin-bottom: 10px;
+      }
+
+      .masthead-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 20px;
       }
 
       h1 {
@@ -114,6 +120,12 @@
         font-size: 1em;
         letter-spacing: 0.1em;
         text-transform: uppercase;
+      }
+
+      .scope-note {
+        margin: -10px 0 24px;
+        font-size: 13px;
+        color: var(--muted);
       }
 
       .topline {
@@ -182,10 +194,24 @@
         color: var(--foreground);
       }
 
-      .muted {
-        display: block;
+      .story-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 10px;
         margin-top: 4px;
         font-size: 12px;
+        color: var(--muted);
+      }
+
+      .story-date {
+        padding: 1px 6px;
+        border: 1px solid #d5d7da;
+        border-radius: 999px;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+      }
+
+      .muted {
         color: var(--muted);
       }
 
@@ -206,6 +232,11 @@
           align-items: flex-start;
         }
 
+        .masthead-meta {
+          flex-direction: column;
+          gap: 6px;
+        }
+
         h1 {
           font-size: 36px;
         }
@@ -222,11 +253,14 @@
     <div class="wrap">
       <header>
         <div class="masthead-top">
-          <div>Last Updated <span id="updated">—</span></div>
-          <div class="place-label" id="edition-type">AI Daily</div>
+          <div class="masthead-meta">
+            <div>Edition <span id="edition-date">—</span></div>
+            <div>Last Updated <span id="updated">—</span></div>
+          </div>
+          <div class="place-label" id="edition-type">Trust & Safety Daily</div>
         </div>
         <h1>
-          <span class="word-ai">AI</span><span class="word-digest">Digest</span>
+          <span class="word-ai">AI</span> <span class="word-digest">Trust &amp; Safety Digest</span>
         </h1>
         <nav class="nav-row" aria-label="Primary">
           <a href="#brief">Daily Brief</a>
@@ -238,12 +272,15 @@
           <strong>Format:</strong>
           <span id="tagline">Loading…</span>
         </p>
+        <p class="scope-note" id="scope-note">
+          A broad current snapshot of trust, safety, governance, and evaluation developments, including as many materially important fresh items as the day warrants.
+        </p>
 
         <section class="topline" id="lead">Loading today’s brief…</section>
 
-        <section class="featured-grid" aria-label="Featured AI updates">
+        <section class="featured-grid" aria-label="Featured AI trust and safety updates">
           <article class="featured-card">
-            <h3>Worth Opening</h3>
+            <h3>Worth Reading</h3>
             <p class="helper-text" id="link-helper">
               Each link opens the original source in a new tab.
             </p>
@@ -263,33 +300,66 @@
       "use strict";
 
       const DIGEST_PATH = "./digest.json";
+      const PAGE_TITLE = "AI Trust & Safety Digest";
+      const DEFAULT_SCOPE_NOTE =
+        "A broad current snapshot of trust, safety, governance, and evaluation developments, including as many materially important fresh items as the day warrants.";
 
       const elements = {
+        editionDate: document.getElementById("edition-date"),
         updated: document.getElementById("updated"),
         editionType: document.getElementById("edition-type"),
         tagline: document.getElementById("tagline"),
+        scopeNote: document.getElementById("scope-note"),
         lead: document.getElementById("lead"),
         featuredList: document.getElementById("featured-list"),
         linkHelper: document.getElementById("link-helper"),
         note: document.getElementById("note")
       };
 
-      function formatGeneratedAt(generatedAt) {
+      function parseGeneratedAt(generatedAt) {
         if (!generatedAt) {
+          return null;
+        }
+
+        const parsed = new Date(generatedAt);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+      }
+
+      function formatEditionDate(generatedAt) {
+        const generated = parseGeneratedAt(generatedAt);
+        if (!generated) {
           return "—";
         }
 
-        const generated = new Date(generatedAt);
-        const datePart = generated.toLocaleDateString(undefined, {
-          month: "numeric",
+        return generated.toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "long",
           day: "numeric"
         });
-        const timePart = generated.toLocaleTimeString(undefined, {
+      }
+
+      function formatUpdatedAt(generatedAt) {
+        const generated = parseGeneratedAt(generatedAt);
+        if (!generated) {
+          return "—";
+        }
+
+        return generated.toLocaleTimeString(undefined, {
           hour: "numeric",
           minute: "2-digit"
         });
+      }
 
-        return `${datePart} at ${timePart}`;
+      function formatStoryDate(publishedAt) {
+        const published = parseGeneratedAt(publishedAt);
+        if (!published) {
+          return "";
+        }
+
+        return published.toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric"
+        });
       }
 
       function renderStories(stories) {
@@ -297,7 +367,7 @@
 
         if (!stories.length) {
           const empty = document.createElement("li");
-          empty.textContent = "The next daily run will drop the top AI links here. Refresh after the next update.";
+          empty.textContent = "The next daily run will drop the top trust-and-safety links here. Refresh after the next update.";
           elements.featuredList.append(empty);
           return;
         }
@@ -315,11 +385,23 @@
           why.className = "story-why";
           why.textContent = story.why_it_matters;
 
+          const meta = document.createElement("span");
+          meta.className = "story-meta";
+
+          const publishedLabel = formatStoryDate(story.published_iso);
+          if (publishedLabel) {
+            const date = document.createElement("span");
+            date.className = "story-date";
+            date.textContent = publishedLabel;
+            meta.append(date);
+          }
+
           const source = document.createElement("span");
           source.className = "muted";
           source.textContent = story.source || "Unknown source";
+          meta.append(source);
 
-          item.append(link, why, source);
+          item.append(link, why, meta);
           elements.featuredList.append(item);
         });
       }
@@ -336,19 +418,24 @@
       async function initialisePage() {
         try {
           const data = await loadDigest();
-          document.title = data.title || "AI Research Digest";
-          elements.updated.textContent = formatGeneratedAt(data.generated_at_utc);
-          elements.editionType.textContent = data.sample ? "Sample" : "AI Daily";
-          elements.tagline.textContent = data.tagline || "One short AI brief and a few useful links.";
-          elements.lead.textContent = data.lead || "No AI brief is available right now.";
-          elements.note.textContent = data.note || "Generated daily from recent AI coverage.";
+          document.title = PAGE_TITLE;
+          elements.editionDate.textContent = formatEditionDate(data.generated_at_utc);
+          elements.updated.textContent = formatUpdatedAt(data.generated_at_utc);
+          elements.editionType.textContent = data.sample ? "Sample Edition" : "Trust & Safety Daily";
+          elements.tagline.textContent =
+            data.tagline || "A curated current snapshot of AI trust, safety, and governance, including as many materially important fresh items as the day warrants.";
+          elements.scopeNote.textContent = DEFAULT_SCOPE_NOTE;
+          elements.lead.textContent = data.lead || "No trust-and-safety brief is available right now.";
+          elements.note.textContent =
+            data.note || "Selected from trust-and-safety relevant sources.";
           elements.linkHelper.textContent = "Each link opens the original source in a new tab.";
           renderStories(Array.isArray(data.items) ? data.items : []);
         } catch (error) {
           console.error("Failed to load data:", error);
-          elements.lead.textContent = "Failed to load the digest. Please try again later.";
+          elements.lead.textContent = "Failed to load the trust-and-safety digest. Please try again later.";
+          elements.scopeNote.textContent = DEFAULT_SCOPE_NOTE;
           elements.linkHelper.textContent = "Once the next update lands, the original source links will appear here.";
-          elements.note.textContent = "Once the updater runs successfully, the latest AI brief will appear here.";
+          elements.note.textContent = "Once the updater runs successfully, the latest trust-and-safety brief will appear here.";
           renderStories([]);
         }
       }

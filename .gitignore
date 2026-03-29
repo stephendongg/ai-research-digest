@@ -1,5 +1,7 @@
 trials/
 venv/
+.venv/
 .env
 .DS_Store
 prototype.ipynb
+__pycache__/

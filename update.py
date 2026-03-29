@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-AI Research Digest generator.
+AI Trust & Safety Digest generator.
 
-Fetches recent AI coverage from Google News search feeds, curates the
+Fetches recent trust-and-safety relevant items from official labs,
+research groups, evaluators, and policy organizations, curates the
 highest-signal developments into a compact daily digest, and writes the
 GitHub Pages assets that power the site.
 """
@@ -12,11 +13,12 @@ from __future__ import annotations
 import json
 import os
 import re
-from datetime import datetime, timezone
+import subprocess
+from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 import feedparser
 import requests
@@ -28,21 +30,32 @@ load_dotenv()
 ROOT = Path(__file__).resolve().parent
 DOCS_DIR = ROOT / "docs"
 
-DIGEST_TITLE = "AI Research Digest"
-DIGEST_TAGLINE = "One box, one brief, five links worth your time."
+DIGEST_TITLE = "AI Trust & Safety Digest"
+DIGEST_TAGLINE = "A curated current snapshot of AI trust, safety, and governance, including as many materially important fresh items as the day warrants."
 MODEL = "gpt-5.4"
 HEADERS = {"User-Agent": "AIResearchDigest/0.1"}
 REQUEST_TIMEOUT = 20
-MAX_STORIES_PER_QUERY = 15
-MAX_CANDIDATES = 24
-CURATED_ITEM_COUNT = 5
-LANGUAGE_PARAMS = "hl=en-US&gl=US&ceid=US:en"
-
-SEARCH_QUERIES = [
-    '"artificial intelligence" when:1d',
-    '"large language model" OR LLM OR chatbot when:1d',
-    'OpenAI OR Anthropic OR DeepMind OR "Meta AI" OR Mistral OR Nvidia when:1d',
+MAX_STORIES_PER_FEED = 25
+MAX_CANDIDATES = 80
+CURATED_ITEM_MIN = 5
+CURATED_ITEM_HARD_MAX = 24
+PREFERRED_STORIES_PER_SOURCE = 2
+RECENT_WINDOW_DAYS = 5
+ARXIV_MAX_RESULTS = 40
+FEEDS = [
+    {"name": "OpenAI News", "url": "https://openai.com/news/rss.xml"},
+    {"name": "Google Research Blog", "url": "https://research.google/blog/rss/"},
+    {"name": "Google DeepMind News", "url": "https://deepmind.google/blog/rss.xml"},
+    {"name": "NIST Artificial Intelligence", "url": "https://www.nist.gov/news-events/artificial%20intelligence/rss.xml"},
+    {"name": "Partnership on AI", "url": "https://partnershiponai.org/feed/"},
+    {"name": "METR", "url": "https://metr.org/feed.xml"},
 ]
+ARXIV_QUERY = (
+    'all:"ai safety" OR all:alignment OR all:interpretability OR '
+    'all:evaluation OR all:"red teaming" OR all:robustness OR '
+    'all:governance OR all:privacy OR all:fairness OR all:jailbreak OR '
+    'all:"system card"'
+)
 
 LOW_SIGNAL_PATTERNS = [
     r"\bopinion\b",
@@ -55,11 +68,50 @@ LOW_SIGNAL_PATTERNS = [
     r"\bwhat is\b",
     r"\bbest ai\b",
     r"\bprompts?\b",
+    r"\bcase study\b",
+    r"\bcustomer stories?\b",
+    r"\bwebcast\b",
+    r"\bcareer(s)?\b",
+    r"\bintern(ship|ships)?\b",
+    r"\bjob(s)?\b",
+    r"\bmeetup\b",
+    r"\bcommunity update(s)?\b",
+    r"\bevent(s)?\b",
+    r"\bworkshop\b",
 ]
 
-
-def build_search_feed_url(query: str) -> str:
-    return f"https://news.google.com/rss/search?q={quote(query)}&{LANGUAGE_PARAMS}"
+TRUST_AND_SAFETY_PATTERNS = [
+    r"\balignment\b",
+    r"\binterpretability\b",
+    r"\bsafety\b",
+    r"\btrustworthy\b",
+    r"\btrust\b",
+    r"\bresponsib(?:le|ility)\b",
+    r"\bgovernance\b",
+    r"\bpolicy\b",
+    r"\bevaluation(s)?\b",
+    r"\bevals?\b",
+    r"\bbenchmark(s)?\b",
+    r"\bred[- ]?team(?:ing)?\b",
+    r"\bsecurity\b",
+    r"\bprivacy\b",
+    r"\btransparency\b",
+    r"\bsafeguard(s)?\b",
+    r"\bpreparedness\b",
+    r"\brisk(s)?\b",
+    r"\brobust(?:ness)?\b",
+    r"\baudit(s|ing)?\b",
+    r"\bassurance\b",
+    r"\bcompliance\b",
+    r"\bincident(s)?\b",
+    r"\bsystem card(s)?\b",
+    r"\bmodel spec\b",
+    r"\bbiosecurity\b",
+    r"\bcybersecurity\b",
+    r"\bfairness\b",
+    r"\bbias\b",
+    r"\bmisuse\b",
+]
 
 
 def collapse_whitespace(value: str) -> str:
@@ -75,6 +127,18 @@ def clean_title(title: str, source: str) -> str:
     return title
 
 
+def canonicalize_link(link: str) -> str:
+    collapsed = collapse_whitespace(link)
+    if not collapsed:
+        return ""
+
+    parsed = urlsplit(collapsed)
+    if not parsed.scheme or not parsed.netloc:
+        return collapsed
+
+    return f"{parsed.scheme}://{parsed.netloc}{parsed.path}".rstrip("/")
+
+
 def parse_published(raw_value: str) -> datetime:
     if not raw_value:
         return datetime.now(timezone.utc)
@@ -87,72 +151,222 @@ def parse_published(raw_value: str) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
+def recent_cutoff() -> datetime:
+    return datetime.now(timezone.utc) - timedelta(days=RECENT_WINDOW_DAYS)
+
+
 def is_low_signal(title: str) -> bool:
     title_lower = title.lower()
     return any(re.search(pattern, title_lower) for pattern in LOW_SIGNAL_PATTERNS)
 
 
+def extract_entry_text(entry: Any) -> str:
+    parts = [
+        getattr(entry, "title", ""),
+        getattr(entry, "summary", ""),
+        getattr(entry, "description", ""),
+    ]
+
+    if hasattr(entry, "tags") and isinstance(entry.tags, list):
+        for tag in entry.tags:
+            if isinstance(tag, dict):
+                parts.append(tag.get("term", ""))
+
+    return collapse_whitespace(" ".join(part for part in parts if part))
+
+
+def story_topic_score(text: str) -> int:
+    text_lower = text.lower()
+    return sum(1 for pattern in TRUST_AND_SAFETY_PATTERNS if re.search(pattern, text_lower))
+
+
 def story_key(story: dict[str, Any]) -> str:
+    canonical_link = canonicalize_link(story["link"])
+    if canonical_link:
+        return canonical_link.lower()
+
     normalized = re.sub(r"[^a-z0-9]+", " ", story["title"].lower()).strip()
     source = re.sub(r"[^a-z0-9]+", " ", story["source"].lower()).strip()
     return f"{normalized}|{source}"
 
 
-def fetch_candidates() -> list[dict[str, Any]]:
-    stories: list[dict[str, Any]] = []
+def get_entry_source(entry: Any, feed_name: str) -> str:
+    if hasattr(entry, "source") and isinstance(entry.source, dict):
+        source_title = collapse_whitespace(entry.source.get("title") or "")
+        if source_title:
+            return source_title
+    return feed_name
 
-    for query in SEARCH_QUERIES:
-        url = build_search_feed_url(query)
+
+def fetch_feed_payload(url: str) -> bytes:
+    try:
         response = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
         response.raise_for_status()
-        feed = feedparser.parse(response.text)
+        return response.content
+    except requests.RequestException as exc:
+        print(f"requests failed for {url}: {exc}. Retrying with curl.")
 
-        added_for_query = 0
+    try:
+        result = subprocess.run(
+            [
+                "curl",
+                "-L",
+                "--fail",
+                "--silent",
+                "--show-error",
+                "--max-time",
+                str(REQUEST_TIMEOUT),
+                "-A",
+                HEADERS["User-Agent"],
+                url,
+            ],
+            check=True,
+            capture_output=True,
+            timeout=REQUEST_TIMEOUT + 5,
+        )
+    except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError(f"Unable to fetch {url}") from exc
+
+    return result.stdout
+
+
+def build_arxiv_query_url() -> str:
+    query = quote(ARXIV_QUERY)
+    return (
+        "https://export.arxiv.org/api/query"
+        f"?search_query={query}"
+        f"&start=0&max_results={ARXIV_MAX_RESULTS}"
+        "&sortBy=submittedDate&sortOrder=descending"
+    )
+
+
+def fetch_arxiv_candidates(cutoff: datetime) -> list[dict[str, Any]]:
+    stories: list[dict[str, Any]] = []
+
+    try:
+        payload = fetch_feed_payload(build_arxiv_query_url())
+    except RuntimeError as exc:
+        print(f"Skipping arXiv search: {exc}")
+        return stories
+
+    feed = feedparser.parse(payload)
+    added = 0
+
+    for entry in feed.entries:
+        title = clean_title(getattr(entry, "title", ""), "arXiv")
+        link = collapse_whitespace(getattr(entry, "link", ""))
+        summary = collapse_whitespace(
+            getattr(entry, "summary", "") or getattr(entry, "description", "")
+        )[:320]
+        published_raw = (
+            collapse_whitespace(getattr(entry, "published", ""))
+            or collapse_whitespace(getattr(entry, "updated", ""))
+            or collapse_whitespace(getattr(entry, "created", ""))
+        )
+        published_at = parse_published(published_raw)
+
+        if published_at < cutoff:
+            break
+
+        topic_score = story_topic_score(extract_entry_text(entry))
+        if not title or not link or is_low_signal(title) or topic_score <= 0:
+            continue
+
+        stories.append(
+            {
+                "title": title,
+                "source": "arXiv",
+                "link": link,
+                "summary": summary,
+                "published_raw": published_raw or "Unknown time",
+                "published_at": published_at,
+                "published_iso": published_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "feed": "arXiv Trust & Safety Search",
+                "topic_score": topic_score,
+            }
+        )
+        added += 1
+
+    print(f"Fetched {added} candidates from: arXiv Trust & Safety Search")
+    return stories
+
+
+def fetch_candidates() -> list[dict[str, Any]]:
+    stories: list[dict[str, Any]] = []
+    cutoff = recent_cutoff()
+
+    for feed_config in FEEDS:
+        feed_name = feed_config["name"]
+        url = feed_config["url"]
+
+        try:
+            payload = fetch_feed_payload(url)
+        except RuntimeError as exc:
+            print(f"Skipping feed {feed_name}: {exc}")
+            continue
+
+        feed = feedparser.parse(payload)
+        added_for_feed = 0
+
         for entry in feed.entries:
-            if added_for_query >= MAX_STORIES_PER_QUERY:
+            if added_for_feed >= MAX_STORIES_PER_FEED:
                 break
 
-            source = ""
-            if hasattr(entry, "source") and isinstance(entry.source, dict):
-                source = collapse_whitespace(entry.source.get("title") or "")
-
+            source = get_entry_source(entry, feed_name)
             title = clean_title(getattr(entry, "title", ""), source)
             link = collapse_whitespace(getattr(entry, "link", ""))
+            summary = collapse_whitespace(
+                getattr(entry, "summary", "") or getattr(entry, "description", "")
+            )[:320]
+            topic_score = story_topic_score(extract_entry_text(entry))
             published_raw = (
                 collapse_whitespace(getattr(entry, "published", ""))
                 or collapse_whitespace(getattr(entry, "updated", ""))
+                or collapse_whitespace(getattr(entry, "created", ""))
             )
 
-            if not title or not link or is_low_signal(title):
+            published_at = parse_published(published_raw)
+            if not title or not link or is_low_signal(title) or topic_score <= 0:
+                continue
+            if published_at < cutoff:
                 continue
 
-            published_at = parse_published(published_raw)
             stories.append(
                 {
                     "title": title,
                     "source": source or "Unknown source",
                     "link": link,
+                    "summary": summary,
                     "published_raw": published_raw or "Unknown time",
                     "published_at": published_at,
                     "published_iso": published_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
-                    "query": query,
+                    "feed": feed_name,
+                    "topic_score": topic_score,
                 }
             )
-            added_for_query += 1
+            added_for_feed += 1
 
-        print(f"Fetched {added_for_query} candidates for query: {query}")
+        print(f"Fetched {added_for_feed} candidates from: {feed_name}")
+
+    stories.extend(fetch_arxiv_candidates(cutoff))
+
+    ranked = sorted(
+        stories,
+        key=lambda item: (item["published_at"], item["topic_score"]),
+        reverse=True,
+    )
 
     deduped: list[dict[str, Any]] = []
     seen: set[str] = set()
 
-    for story in sorted(stories, key=lambda item: item["published_at"], reverse=True):
+    for story in ranked:
         key = story_key(story)
         if key in seen:
             continue
         seen.add(key)
         deduped.append(story)
 
-    trimmed = deduped[:MAX_CANDIDATES]
+    trimmed = prioritize_source_diversity(deduped)
     print(f"Kept {len(trimmed)} total candidate stories after dedupe")
     return trimmed
 
@@ -163,9 +377,33 @@ def build_digest_prompt(stories: list[dict[str, Any]]) -> str:
         lines.append(f"{index}. {story['title']}")
         lines.append(f"   Source: {story['source']}")
         lines.append(f"   Published: {story['published_iso']}")
-        lines.append(f"   Query: {story['query']}")
+        lines.append(f"   Feed: {story['feed']}")
+        if story.get("summary"):
+            lines.append(f"   Summary: {story['summary']}")
+        lines.append(f"   Topic score: {story['topic_score']}")
         lines.append(f"   Link: {story['link']}")
     return "\n".join(lines)
+
+
+def prioritize_source_diversity(
+    stories: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    preferred: list[dict[str, Any]] = []
+    overflow: list[dict[str, Any]] = []
+    source_counts: dict[str, int] = {}
+
+    for story in stories:
+        source = story["source"]
+        count = source_counts.get(source, 0)
+
+        if count < PREFERRED_STORIES_PER_SOURCE:
+            preferred.append(story)
+            source_counts[source] = count + 1
+            continue
+
+        overflow.append(story)
+
+    return (preferred + overflow)[:MAX_CANDIDATES]
 
 
 def curate_digest(stories: list[dict[str, Any]]) -> dict[str, Any]:
@@ -178,15 +416,20 @@ def curate_digest(stories: list[dict[str, Any]]) -> dict[str, Any]:
 
     system_message = f"""
 You are the editor of {DIGEST_TITLE}, a minimalist daily briefing for someone
-who wants to stay current on AI in under three minutes.
+who wants to stay current on AI trust, safety, and governance in under
+three minutes.
 
 Editorial priorities:
-- Prioritize developments that materially change the AI landscape: research,
-  model launches, major product updates, chips and infrastructure, policy,
-  safety, funding, partnerships, and platform strategy.
-- Prefer distinct developments over repeated rewrites of the same story.
-- Skip low-signal content such as generic explainers, listicles, prompts,
-  shallow opinion pieces, and vague trend reports.
+- Prioritize developments in alignment, evaluations, interpretability,
+  red teaming, model behavior, safeguards, security, privacy, governance,
+  policy, standards, audits, preparedness, and risk management.
+- Prefer primary-source updates from labs, evaluators, standards bodies,
+  and policy organizations over commentary about them.
+- Prefer items that change how frontier models are evaluated, governed,
+  secured, deployed, or understood.
+- Skip general model launches, product marketing, funding news, and
+  corporate announcements unless the core story is explicitly about trust
+  and safety.
 
 Return valid JSON with this exact shape:
 {{
@@ -202,12 +445,22 @@ Return valid JSON with this exact shape:
 }}
 
 Rules:
-- Choose exactly {CURATED_ITEM_COUNT} items unless fewer than
-  {CURATED_ITEM_COUNT} genuinely distinct stories exist.
+- Include every materially important fresh story from the provided list.
+- There is no need to keep the digest artificially short.
+- Aim for at least {CURATED_ITEM_MIN} items when enough genuinely distinct
+  trust-and-safety stories exist.
+- If fewer than {CURATED_ITEM_MIN} strong items exist, return fewer.
+- Do not omit materially important fresh stories just to stay near five.
+- Never exceed {CURATED_ITEM_HARD_MAX} items.
 - Use only the provided links and sources.
 - Keep the tone neutral, crisp, and non-hyped.
-- The lead should synthesize the day, not list the headlines.
-- why_it_matters should explain why the reader should care today.
+- Prefer the most recent items when multiple candidates are similarly strong.
+- Prefer source diversity. Avoid stacking too many items from one
+  organization if other strong options exist.
+- The lead should synthesize the day's trust-and-safety signal, not list
+  the headlines.
+- why_it_matters should explain the trust, safety, governance, or risk
+  implication for the reader.
 - Output JSON only.
 """.strip()
 
@@ -224,6 +477,7 @@ Rules:
     payload = json.loads(raw)
 
     valid_links = {story["link"] for story in stories}
+    stories_by_link = {story["link"]: story for story in stories}
     curated_items: list[dict[str, str]] = []
 
     for item in payload.get("items", []):
@@ -231,12 +485,14 @@ Rules:
         if link not in valid_links:
             continue
 
+        story = stories_by_link[link]
         curated_items.append(
             {
                 "title": collapse_whitespace(item.get("title", "")),
                 "source": collapse_whitespace(item.get("source", "")) or "Unknown source",
                 "why_it_matters": collapse_whitespace(item.get("why_it_matters", "")),
                 "link": link,
+                "published_iso": story["published_iso"],
             }
         )
 
@@ -249,11 +505,18 @@ Rules:
         "tagline": DIGEST_TAGLINE,
         "generated_at_utc": generated_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "lead": collapse_whitespace(payload.get("lead", "")),
-        "items": curated_items[:CURATED_ITEM_COUNT],
-        "note": "Curated from Google News AI search results and summarized with GPT-5.4.",
+        "items": curated_items[:CURATED_ITEM_HARD_MAX],
+        "note": "Selected from recent trust-and-safety relevant posts and papers by labs, evaluators, standards bodies, policy organizations, and arXiv, then summarized with GPT-5.4. Includes as many materially important fresh items as the day warrants.",
         "meta": {
             "story_count_considered": len(stories),
-            "queries": SEARCH_QUERIES,
+            "scope": "trust_and_safety",
+            "recency_window_days": RECENT_WINDOW_DAYS,
+            "curated_item_min": CURATED_ITEM_MIN,
+            "curated_item_hard_max": CURATED_ITEM_HARD_MAX,
+            "preferred_stories_per_source": PREFERRED_STORIES_PER_SOURCE,
+            "max_candidates": MAX_CANDIDATES,
+            "feeds": [feed["name"] for feed in FEEDS],
+            "research_sources": ["arXiv Trust & Safety Search"],
         },
     }
 
@@ -271,8 +534,10 @@ def digest_to_markdown(digest: dict[str, Any]) -> str:
     ]
 
     for item in digest["items"]:
+        published_iso = collapse_whitespace(item.get("published_iso", ""))
+        published_text = f" Published: {published_iso}." if published_iso else ""
         lines.append(
-            f"- [{item['title']}]({item['link']}) - {item['why_it_matters']} Source: {item['source']}."
+            f"- [{item['title']}]({item['link']}) - {item['why_it_matters']} Source: {item['source']}.{published_text}"
         )
 
     lines.extend(
@@ -305,11 +570,11 @@ def write_outputs(digest: dict[str, Any]) -> None:
 def main() -> None:
     stories = fetch_candidates()
     if not stories:
-        raise RuntimeError("No AI stories were fetched from Google News")
+        raise RuntimeError("No trust-and-safety stories were fetched from the configured feeds")
 
     digest = curate_digest(stories)
     write_outputs(digest)
-    print("\nAI Research Digest update complete.")
+    print("\nAI Trust & Safety Digest update complete.")
 
 
 if __name__ == "__main__":
