@@ -2,7 +2,7 @@
 
 Minimal daily briefing built for one job: help me stay current on AI trust, safety, and governance.
 
-[View live ->](https://stephendongg.github.io/ai-research-digest/)
+[View live ->](https://stephendongg.github.io/ai-tns-digest/)
 
 ## How it works
 
