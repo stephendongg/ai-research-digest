@@ -2,19 +2,18 @@
 
 A curated current snapshot of AI trust, safety, and governance, including as many materially important fresh items as the day warrants.
 
-Today’s signal is heavy on evaluation limits and robustness gaps rather than new deployment rules. The strongest items sharpen how we should audit rare failures, measure model behavior under brittle constraints, benchmark policy and multimodal understanding, and gate high-capability cyber access with tighter safeguards.
+Today’s strongest trust-and-safety signal is a continued shift from abstract AI risk discussion toward operational controls: gated cyber access, model-specific safeguards, and new evaluation ideas for how people actually judge systems. The research mix is thinner on formal standards or policy actions, but it does add useful work on governance opacity, reasoning reliability, misuse-relevant writing patterns, and tokenizer-level robustness.
 
 ## Worth Opening
 
-- [OpenAI expands trusted cyber access program with GPT-5.4-Cyber](https://openai.com/index/scaling-trusted-access-for-cyber-defense) - Controlled access and stronger safeguards shape how high-risk cyber capabilities are deployed to defenders. Source: OpenAI News. Published: 2026-04-14T00:00:00Z.
-- [The Verification Tax analyzes fundamental limits of auditing rare AI errors](https://arxiv.org/abs/2604.12951v1) - It argues rare-error auditing faces hard sample-complexity limits, affecting assurance, calibration, and safety claims. Source: arXiv. Published: 2026-04-15T11:44:34Z.
-- [PolicyLLM introduces PolicyBench for evaluating LLM comprehension of public policy](https://arxiv.org/abs/2604.12995v1) - Policy-specific benchmarks matter as models are used in governance, compliance, and public-sector decision support. Source: arXiv. Published: 2026-04-15T11:44:34Z.
-- [One Token Away from Collapse finds instruction-tuned helpfulness can be brittle](https://arxiv.org/abs/2604.13006v1) - Small lexical constraints causing large performance drops raise concerns about robustness and dependable deployment. Source: arXiv. Published: 2026-04-15T11:44:34Z.
-- [Survey maps hallucination risks in video language models](https://arxiv.org/abs/2604.12944v1) - A consolidated taxonomy and benchmark view can improve multimodal evaluation and mitigation of false video-grounded claims. Source: arXiv. Published: 2026-04-15T11:44:34Z.
-- [LogicEval proposes a framework to evaluate automated repair of logical software vulnerabilities](https://arxiv.org/abs/2604.12994v1) - Better evaluation of logic-bug repair is relevant to securing AI-assisted coding and vulnerability remediation. Source: arXiv. Published: 2026-04-15T11:44:34Z.
-- [Parallax argues AI agents that reason should be separated from systems that act](https://arxiv.org/abs/2604.12986v1) - The paper centers architectural containment and permission boundaries for agent safety. Source: arXiv. Published: 2026-04-15T11:44:34Z.
-- [Continual face forgery detection paper targets forgetting as new manipulation methods emerge](https://arxiv.org/abs/2604.12941v1) - Improving persistent deepfake detection supports media integrity as attack techniques evolve over time. Source: arXiv. Published: 2026-04-15T11:44:34Z.
+- [OpenAI expands trusted cyber access with GPT-5.4-Cyber and tighter vetting](https://openai.com/index/scaling-trusted-access-for-cyber-defense) - It shows frontier cyber capabilities being deployed through controlled access and safeguard-focused governance. Source: OpenAI News. Published: 2026-04-14T00:00:00Z.
+- [OpenAI adds security firms and API grants to cyber defense program](https://openai.com/index/accelerating-cyber-defense-ecosystem) - It operationalizes a monitored pathway for defensive use of advanced cyber models at larger scale. Source: OpenAI News. Published: 2026-04-16T00:00:00Z.
+- [Six dimensions of strain in current AI governance](https://arxiv.org/abs/2604.14070v1) - It argues disclosure-based governance may fail as capability asymmetries and system opacity increase. Source: arXiv. Published: 2026-04-16T11:49:17Z.
+- [Understanding and formalizing how users vibe-test LLMs](https://arxiv.org/abs/2604.14137v1) - It could improve evaluation by translating informal user judgments into more systematic model assessments. Source: arXiv. Published: 2026-04-16T11:49:17Z.
+- [Consensus reasoning knowledge graph for robust chain-of-thought synthesis](https://arxiv.org/abs/2604.14121v1) - It targets hidden reasoning flaws, a core issue for reliability and safety in model outputs. Source: arXiv. Published: 2026-04-16T11:49:17Z.
+- [Interpretable stylistic variation in human and LLM writing](https://arxiv.org/abs/2604.14111v1) - It informs misuse detection by characterizing stylistic signals linked to spam, phishing, and academic abuse. Source: arXiv. Published: 2026-04-16T11:49:17Z.
+- [Regularizing code tokenizers through source attribution](https://arxiv.org/abs/2604.14053v1) - It suggests tokenizer design can affect jailbreak resistance, hallucination risk, and model robustness. Source: arXiv. Published: 2026-04-16T11:49:17Z.
 
 Selected from recent trust-and-safety relevant posts and papers by labs, evaluators, standards bodies, policy organizations, and arXiv, then summarized with GPT-5.4. Includes as many materially important fresh items as the day warrants.
 
-Generated at: 2026-04-15T11:44:48Z
+Generated at: 2026-04-16T11:49:28Z
