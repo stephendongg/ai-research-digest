@@ -2,20 +2,20 @@
 
 A curated current snapshot of AI trust, safety, and governance, including as many materially important fresh items as the day warrants.
 
-Today’s signal is concentrated in evaluation and control: several fresh papers propose more trustworthy ways to assess retrieval, multimodal reasoning, and AI system security, while OpenAI released an open-weight privacy model for PII redaction. The common thread is a shift from headline performance toward coverage, process visibility, and operational safeguards that could make deployed systems easier to audit and harder to misuse.
+Today's signal centers on how AI safety work is becoming more operational: new system documentation, targeted red-teaming incentives, and research on failure modes that slip past current safeguards. The strongest updates focus on multi-turn jailbreak risk, privacy tooling, and evaluation methods that better expose memorization, grounding, and security blind spots.
 
 ## Worth Opening
 
-- [OpenAI releases open-weight Privacy Filter for PII detection and redaction](https://openai.com/index/introducing-openai-privacy-filter) - It directly improves privacy safeguards for text pipelines and enables broader auditing of PII filtering behavior. Source: OpenAI News. Published: 2026-04-22T00:00:00Z.
-- [Coverage, Not Averages proposes semantic stratification for trustworthy retrieval evaluation](https://arxiv.org/abs/2604.20763v1) - It targets hidden bias in RAG evaluation, improving robustness claims and failure coverage beyond average metrics. Source: arXiv. Published: 2026-04-23T11:50:56Z.
-- [V-tableR1 uses process supervision for verifiable multimodal table reasoning](https://arxiv.org/abs/2604.20755v1) - It aims to make multimodal reasoning more inspectable and less reliant on opaque pattern matching. Source: arXiv. Published: 2026-04-23T11:50:56Z.
-- [AVISE introduces a framework for evaluating the security of AI systems](https://arxiv.org/abs/2604.20833v1) - It offers a structured basis for assessing AI-specific vulnerabilities rather than treating security as ad hoc testing. Source: arXiv. Published: 2026-04-23T11:50:56Z.
-- [Synthesizing Multi-Agent Harnesses for Vulnerability Discovery studies agentic security workflows](https://arxiv.org/abs/2604.20801v1) - It matters because agent orchestration can materially affect real-world vulnerability discovery and misuse risk. Source: arXiv. Published: 2026-04-23T11:50:56Z.
-- [OMIBench benchmarks olympiad-level multi-image reasoning in vision-language models](https://arxiv.org/abs/2604.20806v1) - It expands evaluation of multimodal reasoning to harder multi-image settings where current benchmarks under-test models. Source: arXiv. Published: 2026-04-23T11:50:56Z.
-- [SpeechParaling-Bench introduces a benchmark for paralinguistic-aware speech generation](https://arxiv.org/abs/2604.20842v1) - It broadens evaluation of audio models toward nuanced behavior that affects trust, deception, and user perception. Source: arXiv. Published: 2026-04-23T11:50:56Z.
-- [Can AI Be a Doctor evaluates empathy, readability, and alignment in clinical LLMs](https://arxiv.org/abs/2604.20791v1) - It examines whether medical LLM outputs align with communication standards in a high-stakes deployment domain. Source: arXiv. Published: 2026-04-23T11:50:56Z.
-- [Relative Principals, Pluralistic Alignment, and the Structural Value Alignment Problem reframes alignment as governance](https://arxiv.org/abs/2604.20805v1) - It shifts alignment discussion from abstract values to who systems are structurally accountable to. Source: arXiv. Published: 2026-04-23T11:50:56Z.
+- [Transient Turn Injection exposes stateless multi-turn jailbreak vulnerabilities](https://arxiv.org/abs/2604.21860v1) - Shows how turn-by-turn moderation can miss distributed harmful intent across conversations. Source: arXiv. Published: 2026-04-24T11:50:09Z.
+- [OpenAI publishes GPT-5.5 system card](https://openai.com/index/gpt-5-5-system-card) - System cards are primary evidence for how frontier models were evaluated, mitigated, and deployment-scoped. Source: OpenAI News. Published: 2026-04-23T11:00:00Z.
+- [OpenAI launches GPT-5.5 Bio Bug Bounty](https://openai.com/index/gpt-5-5-bio-bug-bounty) - Expands external red teaming for high-consequence bio misuse and jailbreak discovery. Source: OpenAI News. Published: 2026-04-23T00:00:00Z.
+- [OpenAI releases Privacy Filter for PII detection and redaction](https://openai.com/index/introducing-openai-privacy-filter) - Operational privacy filters can reduce accidental exposure of sensitive personal data in AI pipelines. Source: OpenAI News. Published: 2026-04-22T00:00:00Z.
+- [CrossCommitVuln-Bench targets vulnerabilities invisible to per-commit analysis](https://arxiv.org/abs/2604.21917v1) - Highlights evaluation gaps in code-security systems that miss risks emerging across multiple changes. Source: arXiv. Published: 2026-04-24T11:50:09Z.
+- [Revisiting non-verbatim memorization in LLMs through entity surface forms](https://arxiv.org/abs/2604.21882v1) - Improves how researchers measure memorization, with implications for privacy, leakage, and reliability claims. Source: arXiv. Published: 2026-04-24T11:50:09Z.
+- [Grounding Video Reasoning in Physical Signals introduces a benchmark for localized physical understanding](https://arxiv.org/abs/2604.21873v1) - Tests whether models truly ground answers in evidence rather than exploiting dataset shortcuts. Source: arXiv. Published: 2026-04-24T11:50:09Z.
+- [MathDuels proposes self-play evaluation for models as both problem posers and solvers](https://arxiv.org/abs/2604.21916v1) - Offers a new way to differentiate advanced model capabilities beyond saturated static benchmarks. Source: arXiv. Published: 2026-04-24T11:50:09Z.
+- [FAccT-Checked reviews how AI is reconfiguring authority in journalism](https://arxiv.org/abs/2604.21864v1) - Frames accountability shifts when AI mediates editorial decisions, responsibility, and epistemic trust. Source: arXiv. Published: 2026-04-24T11:50:09Z.
 
 Selected from recent trust-and-safety relevant posts and papers by labs, evaluators, standards bodies, policy organizations, and arXiv, then summarized with GPT-5.4. Includes as many materially important fresh items as the day warrants.
 
-Generated at: 2026-04-23T11:51:09Z
+Generated at: 2026-04-24T11:50:20Z
