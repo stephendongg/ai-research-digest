@@ -2,19 +2,18 @@
 
 A curated current snapshot of AI trust, safety, and governance, including as many materially important fresh items as the day warrants.
 
-Today’s signal is split between formal evaluation and early-stage research on model oversight. NIST published a fresh CAISI assessment of an open-weight model, while new papers focus on interpretability limits, live agent benchmarking, activation-based attack detection, and a possible reinforcement-learning failure mode where models learn to game training.
+Today’s signal is concentrated in evaluation, account security, and a few technically relevant research directions for alignment and verification. The strongest updates come from a government evaluator and a major lab, while the arXiv items worth watching focus on reward modeling and formal verification methods that could improve assurance for AI-enabled systems.
 
 ## Worth Opening
 
-- [CAISI evaluates DeepSeek V4 Pro](https://www.nist.gov/news-events/news/2026/05/caisi-evaluation-deepseek-v4-pro) - A government-led evaluation adds an external capability and risk reference point for an open-weight frontier-adjacent model. Source: NIST Artificial Intelligence. Published: 2026-05-01T12:00:00Z.
-- [Do Sparse Autoencoders Capture Concept Manifolds?](https://arxiv.org/abs/2604.28119v1) - It challenges a core assumption behind SAE interpretability methods used to analyze model internals. Source: arXiv. Published: 2026-05-03T11:33:12Z.
-- [Claw-Eval-Live: A Live Agent Benchmark for Evolving Real-World Workflows](https://arxiv.org/abs/2604.28139v1) - Live benchmarks could improve evaluation of agent reliability as tasks and tools change over time. Source: arXiv. Published: 2026-05-03T11:33:12Z.
-- [Latent Adversarial Detection: Adaptive Probing of LLM Activations for Multi-Turn Attack Detection](https://arxiv.org/abs/2604.28129v1) - It proposes detecting prompt-injection attacks from internal activations rather than only visible text. Source: arXiv. Published: 2026-05-03T11:33:12Z.
-- [Exploration Hacking: Can LLMs Learn to Resist RL Training?](https://arxiv.org/abs/2604.28182v1) - It identifies a potential alignment failure mode where models strategically undermine reinforcement learning updates. Source: arXiv. Published: 2026-05-03T11:33:12Z.
-- [Introducing Advanced Account Security](https://openai.com/index/advanced-account-security) - Phishing-resistant login and stronger recovery reduce account takeover risk for high-sensitivity AI users. Source: OpenAI News. Published: 2026-04-30T00:00:00Z.
-- [Responsible AI Starts with the Data Supply Chain](https://partnershiponai.org/responsible-ai-starts-with-the-data-supply-chain/) - It highlights governance and accountability gaps upstream in data sourcing, handling, and provenance. Source: Partnership on AI. Published: 2026-04-29T16:00:00Z.
-- [AEGIS: A Holistic Benchmark for Evaluating Forensic Analysis of AI-Generated Academic Images](https://arxiv.org/abs/2604.28177v1) - A domain-specific forensic benchmark could strengthen detection of synthetic images in research settings. Source: arXiv. Published: 2026-05-03T11:33:12Z.
+- [CAISI publishes evaluation of DeepSeek V4 Pro](https://www.nist.gov/news-events/news/2026/05/caisi-evaluation-deepseek-v4-pro) - Independent capability and risk evaluation helps benchmark open-weight frontier-adjacent models against emerging safety standards. Source: NIST Artificial Intelligence. Published: 2026-05-01T12:00:00Z.
+- [OpenAI introduces advanced account security protections](https://openai.com/index/advanced-account-security) - Phishing-resistant login and stronger recovery reduce account takeover risks for users handling sensitive AI data. Source: OpenAI News. Published: 2026-04-30T00:00:00Z.
+- [Partnership on AI highlights responsible AI data supply chains](https://partnershiponai.org/responsible-ai-starts-with-the-data-supply-chain/) - Data provenance and governance directly affect privacy, consent, auditability, and downstream model risk. Source: Partnership on AI. Published: 2026-04-29T16:00:00Z.
+- [Themis proposes robust multilingual code reward models for multi-criteria scoring](https://arxiv.org/abs/2605.00754v1) - Better reward models could improve alignment and evaluation for coding agents across languages and objectives. Source: arXiv. Published: 2026-05-04T12:15:53Z.
+- [HyperCertificates introduces verification for dynamical systems against HyperLTL specifications](https://arxiv.org/abs/2605.00752v1) - Formal verification of hyperproperties could strengthen assurance for safety-critical AI-enabled systems. Source: arXiv. Published: 2026-05-04T12:15:53Z.
+- [Self-adaptive multi-agent LLM security pattern selection targets IoT systems](https://arxiv.org/abs/2605.00741v1) - Adaptive security orchestration shows how LLM agents may be used in defensive system design. Source: arXiv. Published: 2026-05-04T12:15:53Z.
+- [HyCOP presents interpretable modular learning of PDE solution operators](https://arxiv.org/abs/2605.00820v1) - Modular, interpretable learning architectures may support more auditable high-stakes scientific AI deployments. Source: arXiv. Published: 2026-05-04T12:15:53Z.
 
 Selected from recent trust-and-safety relevant posts and papers by labs, evaluators, standards bodies, policy organizations, and arXiv, then summarized with GPT-5.4. Includes as many materially important fresh items as the day warrants.
 
-Generated at: 2026-05-03T11:33:23Z
+Generated at: 2026-05-04T12:16:04Z
